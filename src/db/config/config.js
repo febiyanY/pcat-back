@@ -23,6 +23,9 @@ module.exports = {
     database: "database_production",
     host: "127.0.0.1",
     dialect: "mysql",
-    use_env_variable: 'DATABASE_URL'
+    use_env_variable: 'DATABASE_URL',
+    define: {
+      timestamps: false
+    }
   }
 }
