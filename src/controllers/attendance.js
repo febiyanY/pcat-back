@@ -19,14 +19,14 @@ class Attendance {
     async attend(req,res){
         try{
             if(attendCode!==req.body.attendCode) throw {message : 'Code is incorrect', status : 400}
-            let date = moment().utcOffset(7).format('YYYY-MM-DD')
+            let date = moment().utcOffset(7).format('YYYY-MM-DD[T]HH:mm:ss.SSS[Z]')
             const today = new Date(date)
             const isInTodaySchedule = await mSchedule.findOne({where : {user_id: req.session.user.id, day_id: today.getDay()}})
             if(!isInTodaySchedule) throw {message : 'you are not in todays schedule', status: 400}
             const didIAttend = await this.isAlreadyAttend(req.session.user.id, `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`)
             if(didIAttend) throw {message : 'udah absen', status: 400}
             await mAttendance.create({
-                time: new Date(),
+                time: today,
                 user_id: req.session.user.id,
                 day_id: today.getDay()
             })
@@ -92,6 +92,7 @@ class Attendance {
             if(!clientIp.includes(allowedIp) && clientIp!=='::1') throw {message : 'Unauthorized', status : 401}
             let today= moment().utcOffset(7).format('YYYY-MM-DD')
             today= new Date(today)
+            // console.log({tanggal : `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`})
             const isInTodaySchedule = await mSchedule.findOne({where : {user_id: req.session.user.id, day_id: today.getDay()}})
             if(!isInTodaySchedule) throw {message : 'you are not in todays schedule', status: 400}
             const didIAttend = await this.isAlreadyAttend(req.session.user.id, `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`)
