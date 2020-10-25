@@ -1,5 +1,6 @@
 const {User: mUser, Day: mDay, Attendance: mAttendance, Schedule: mSchedule, Sequelize, sequelize: db} = require('../db/models/index')
 const {v4: uuidv4} = require('uuid')
+const moment = require('moment')
 var attendCode = uuidv4()
 var allowedIp = '#%$%$%'
 
@@ -18,7 +19,8 @@ class Attendance {
     async attend(req,res){
         try{
             if(attendCode!==req.body.attendCode) throw {message : 'Code is incorrect', status : 400}
-            const today = new Date()
+            let date = moment().utcOffset(7).format('YYYY-MM-DD')
+            const today = new Date(date)
             const isInTodaySchedule = await mSchedule.findOne({where : {user_id: req.session.user.id, day_id: today.getDay()}})
             if(!isInTodaySchedule) throw {message : 'you are not in todays schedule', status: 400}
             const didIAttend = await this.isAlreadyAttend(req.session.user.id, `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`)
@@ -67,9 +69,9 @@ class Attendance {
             // }else{
             //     return true
             // }
-
+            let waktu = moment(date).utcOffset(7).format('YYYY-MM-DD')
             const attendance = await mAttendance.findOne({where : {user_id: user_id, time: {
-                [Sequelize.Op.between] : [new Date(`${date} 00:00:00`), new Date(`${date} 23:59:59`)]
+                [Sequelize.Op.between] : [new Date(`${waktu} 00:00:00`), new Date(`${waktu} 23:59:59`)]
             }}})
             
             if(!attendance) return false
@@ -86,9 +88,10 @@ class Attendance {
         try{
             let clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress
             if (clientIp.substr(0, 7) == "::ffff:") clientIp = clientIp.substr(7)
-            console.log({clientIp, allowedIp})
+            // console.log({clientIp, allowedIp})
             if(!clientIp.includes(allowedIp) && clientIp!=='::1') throw {message : 'Unauthorized', status : 401}
-            const today= new Date()
+            let today= moment().utcOffset(7).format('YYYY-MM-DD')
+            today= new Date(today)
             const isInTodaySchedule = await mSchedule.findOne({where : {user_id: req.session.user.id, day_id: today.getDay()}})
             if(!isInTodaySchedule) throw {message : 'you are not in todays schedule', status: 400}
             const didIAttend = await this.isAlreadyAttend(req.session.user.id, `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`)
@@ -118,14 +121,15 @@ class Attendance {
 
             // date format = year-month-date
             if(!req.query.date) throw {message : 'request invalid',status : 400}
-            const date = new Date(req.query.date)
+            const dateWithTimezone = moment(req.query.date).utcOffset(7).format('YYYY-MM-DD')
+            const date = new Date(dateWithTimezone)
             const attendance = await mDay.findOne({where: {id: date.getDay()}, include : [
                 {model : mUser, as : 'schedule', attributes : ['id','name'], include : [
                     {
                         model : mAttendance, 
                         attributes: ['time'],
                         where : {time: {
-                            [Sequelize.Op.between] : [new Date(`${req.query.date} 00:00:00`), new Date(`${req.query.date} 23:59:59`)]
+                            [Sequelize.Op.between] : [new Date(`${dateWithTimezone} 00:00:00`), new Date(`${dateWithTimezone} 23:59:59`)]
                         }}, required : false
                     }
                 ]}
