@@ -27,6 +27,7 @@ const corsConfig = {
 if(app.get('env')==='production'){
     app.set('trust proxy', 1) // trust first proxy
     sessConfig.cookie.secure = true // serve secure cookie
+    sessConfig.cookie.sameSite = "none" // for access 3rd party cookies
 }
 
 const rAuth = require('./routes/auth')
